@@ -34,6 +34,7 @@ public class GameData {
     @Getter private static Int2ObjectMap<PlayerIconExcel> playerIconExcelMap = new Int2ObjectOpenHashMap<>();
     @Getter private static Int2ObjectMap<ItemComposeExcel> itemComposeExcelMap = new Int2ObjectOpenHashMap<>();
     @Getter private static Int2ObjectMap<ActivityPanelExcel> activityPanelExcelMap = new Int2ObjectOpenHashMap<>();
+    @Getter private static Int2ObjectMap<BackGroundMusicExcel> backGroundMusicExcelMap = new Int2ObjectOpenHashMap<>();
     
     @Getter private static Int2ObjectMap<ChallengeGroupExcel> challengeGroupExcelMap = new Int2ObjectOpenHashMap<>();
     @Getter private static Int2ObjectMap<ChallengeExcel> challengeExcelMap = new Int2ObjectOpenHashMap<>();
@@ -57,6 +58,7 @@ public class GameData {
     private static Int2ObjectMap<ChatBubbleExcel> chatBubbleExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<PhoneThemeExcel> phoneThemeExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<MonsterDropExcel> monsterDropExcelMap = new Int2ObjectOpenHashMap<>();
+    private static Int2ObjectMap<MonsterExcel> monsterExcelMap = new Int2ObjectOpenHashMap<>();
     
     private static Int2ObjectMap<PlayerLevelExcel> playerLevelExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<ExpTypeExcel> expTypeExcelMap = new Int2ObjectOpenHashMap<>();
@@ -65,6 +67,7 @@ public class GameData {
 
     private static Int2ObjectMap<RelicMainAffixExcel> relicMainAffixExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<RelicSubAffixExcel> relicSubAffixExcelMap = new Int2ObjectOpenHashMap<>();
+    private static Int2ObjectMap<RelicSetExcel> relicSetExcelMap = new Int2ObjectOpenHashMap<>();
     
     // Configs (Bin)
     @Getter private static Object2ObjectMap<String, FloorInfo> floorInfos = new Object2ObjectOpenHashMap<>();
@@ -95,6 +98,62 @@ public class GameData {
         }
 
         return allIds;
+    }
+
+    public static List<Integer> getAllRelicIds() {
+        List<Integer> allIds = new ArrayList<>();
+
+        for (Int2ObjectMap.Entry<RelicExcel> entry : relicExcelMap.int2ObjectEntrySet()) {
+            RelicExcel relicExcel = entry.getValue();
+            allIds.add(relicExcel.getId());
+        }
+
+        return allIds;
+    }
+
+    public static int getRelicSetFromId(int relicId) {
+        RelicExcel relicExcel = GameData.getRelicExcelMap().get(relicId);
+
+        if (relicExcel == null) {
+            return 0;
+        }
+        return relicExcel.getSetId();
+    }
+
+    public static int getRelicTypeFromId(int relicId) {
+        RelicExcel relicExcel = GameData.getRelicExcelMap().get(relicId);
+
+        if (relicExcel == null) {
+            return 0;
+        }
+        return relicExcel.getType().getVal();
+    }
+
+    public static List<Integer> getAllMusicIds() {
+        List<Integer> allIds = new ArrayList<>();
+
+        for (Int2ObjectMap.Entry<BackGroundMusicExcel> entry : backGroundMusicExcelMap.int2ObjectEntrySet()) {
+            BackGroundMusicExcel backGroundMusicExcel = entry.getValue();
+            allIds.add(backGroundMusicExcel.getId());
+        }
+
+        return allIds;
+    }
+
+    public static List<Integer> getAllMonsterIds() {
+        List<Integer> allIds = new ArrayList<>();
+
+        for (Int2ObjectMap.Entry<MonsterExcel> entry : monsterExcelMap.int2ObjectEntrySet()) {
+            MonsterExcel monsterExcel = entry.getValue();
+            allIds.add(monsterExcel.getId());
+        }
+
+        return allIds;
+    }
+
+    public static int getMusicGroupId(int musicId) {
+        var excel = backGroundMusicExcelMap.get(musicId);
+        return excel != null ? excel.getGroupId() : 0;
     }
 
     public static List<Integer> getAllPhoneThemes() {
