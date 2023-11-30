@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 
 import java.util.List;
 import java.util.ArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import emu.lunarcore.data.config.FloorInfo;
 import emu.lunarcore.data.excel.*;
 import emu.lunarcore.game.battle.MazeBuff;
@@ -48,6 +49,7 @@ public class GameData {
     @Getter private static Int2ObjectMap<RogueRoomExcel> rogueRoomExcelMap = new Int2ObjectOpenHashMap<>();
     @Getter private static Int2ObjectMap<RogueMapExcel> rogueMapExcelMap = new Int2ObjectOpenHashMap<>();
     @Getter private static Int2ObjectMap<RogueMonsterExcel> rogueMonsterExcelMap = new Int2ObjectOpenHashMap<>();
+    private static Int2ObjectMap<RogueBuffExcel> rogueBuffExcelMap = new Int2ObjectOpenHashMap<>();
     
     private static Int2ObjectMap<AvatarPromotionExcel> avatarPromotionExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<AvatarSkillTreeExcel> avatarSkillTreeExcelMap = new Int2ObjectOpenHashMap<>();
@@ -59,6 +61,8 @@ public class GameData {
     private static Int2ObjectMap<PhoneThemeExcel> phoneThemeExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<MonsterDropExcel> monsterDropExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<MonsterExcel> monsterExcelMap = new Int2ObjectOpenHashMap<>();
+    private static Int2ObjectMap<QuestExcel> questExcelMap = new Int2ObjectLinkedOpenHashMap<>();
+    private static Int2ObjectMap<TextJoinExcel> textJoinExcelMap = new Int2ObjectLinkedOpenHashMap<>();
     
     private static Int2ObjectMap<PlayerLevelExcel> playerLevelExcelMap = new Int2ObjectOpenHashMap<>();
     private static Int2ObjectMap<ExpTypeExcel> expTypeExcelMap = new Int2ObjectOpenHashMap<>();
@@ -135,6 +139,30 @@ public class GameData {
         for (Int2ObjectMap.Entry<BackGroundMusicExcel> entry : backGroundMusicExcelMap.int2ObjectEntrySet()) {
             BackGroundMusicExcel backGroundMusicExcel = entry.getValue();
             allIds.add(backGroundMusicExcel.getId());
+        }
+
+        return allIds;
+    }
+
+    public static int TextJoinItemFromId(int id) {
+        for (Int2ObjectMap.Entry<TextJoinExcel> entry : textJoinExcelMap.int2ObjectEntrySet()) {
+            TextJoinExcel textJoinExcel = entry.getValue();
+            if (textJoinExcel.getId() == id) {
+                IntArrayList textJoinItemList = textJoinExcel.getTextJoinItemList();
+                if (textJoinItemList.size() > 0) {
+                    return textJoinItemList.getInt(textJoinItemList.size() - 1);
+                }
+            }
+        }
+        return id * 10; // or return a default value if needed
+    }
+
+    public static List<Integer> getAllQuestIds() {
+        List<Integer> allIds = new ArrayList<>();
+
+        for (Int2ObjectMap.Entry<QuestExcel> entry : questExcelMap.int2ObjectEntrySet()) {
+            QuestExcel questExcel = entry.getValue();
+            allIds.add(questExcel.getId());
         }
 
         return allIds;
@@ -244,5 +272,9 @@ public class GameData {
     
     public static RogueMapExcel getRogueMapExcel(int rogueMapId, int siteId) {
         return rogueMapExcelMap.get((rogueMapId << 8) + siteId);
+    }
+    
+    public static RogueBuffExcel getRogueBuffExcel(int rogueBuffId, int level) {
+        return rogueBuffExcelMap.get((rogueBuffId << 4) + level);
     }
 }

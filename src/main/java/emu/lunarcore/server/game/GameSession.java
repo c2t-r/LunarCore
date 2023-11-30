@@ -127,6 +127,10 @@ public class GameSession {
 
                 // Log packet
                 if (LunarCore.getConfig().getLogOptions().packets) {
+                    if (LunarCore.getConfig().getLogOptions().filterLoopingPackets && CmdIdUtils.LOOP_PACKETS.contains(opcode)) {
+                        return;
+                    }
+                    
                     logPacket("RECV", opcode, data);
                 }
 
@@ -142,7 +146,7 @@ public class GameSession {
 
     public void send(BasePacket packet) {
         // Test
-        if (packet.getOpcode() <= 0) {
+        if (packet.getCmdId() <= 0) {
             LunarCore.getLogger().warn("Tried to send packet with missing cmd id!");
             return;
         }
@@ -152,7 +156,11 @@ public class GameSession {
 
         // Log
         if (LunarCore.getConfig().getLogOptions().packets) {
-            logPacket("SEND", packet.getOpcode(), packet.getData());
+            if (LunarCore.getConfig().getLogOptions().filterLoopingPackets && CmdIdUtils.LOOP_PACKETS.contains(packet.getCmdId())) {
+                return;
+            }
+            
+            logPacket("SEND", packet.getCmdId(), packet.getData());
         }
     }
 
@@ -167,6 +175,10 @@ public class GameSession {
             
             // Log
             if (LunarCore.getConfig().getLogOptions().packets) {
+                if (LunarCore.getConfig().getLogOptions().filterLoopingPackets && CmdIdUtils.LOOP_PACKETS.contains(cmdId)) {
+                    return;
+                }
+
                 logPacket("SEND", cmdId, null);
             }
         }
