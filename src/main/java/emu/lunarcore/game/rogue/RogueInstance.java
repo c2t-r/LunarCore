@@ -8,6 +8,7 @@ import emu.lunarcore.data.excel.RogueAeonExcel;
 import emu.lunarcore.data.excel.RogueAreaExcel;
 import emu.lunarcore.data.excel.RogueMapExcel;
 import emu.lunarcore.game.battle.Battle;
+import emu.lunarcore.game.enums.RogueBuffAeonType;
 import emu.lunarcore.game.player.Player;
 import emu.lunarcore.game.player.lineup.PlayerLineup;
 import emu.lunarcore.proto.AvatarTypeOuterClass.AvatarType;
@@ -54,6 +55,9 @@ public class RogueInstance {
     private int aeonId;
     private int aeonBuffType;
     private int maxAeonBuffs;
+    
+    private int roomScore;
+    private int earnedTalentCoin;
     private boolean isWin;
     
     @Deprecated // Morphia only!
@@ -71,7 +75,7 @@ public class RogueInstance {
         
         if (aeonExcel != null) {
             this.aeonId = aeonExcel.getAeonID();
-            this.aeonBuffType = aeonExcel.getRogueBuffType(); 
+            this.aeonBuffType = aeonExcel.getRogueBuffType();
         }
         
         this.initRooms();
@@ -289,9 +293,24 @@ public class RogueInstance {
         return nextRoom;
     }
     
+    public void onFinish() {
+        // Calculate completed rooms
+        int completedRooms = Math.max(this.currentRoomProgress - (this.isWin() ? 0 : 1), 0);
+        
+        // Calculate score and talent point rewards
+        this.roomScore = this.getExcel().getScoreMap().get(completedRooms);
+        this.earnedTalentCoin = this.roomScore / 10;
+        
+        // Add coins to player
+        if (this.earnedTalentCoin > 0) {
+            this.getPlayer().addTalentPoints(this.earnedTalentCoin);
+            this.getPlayer().save();
+        }
+    }
+    
     // Dialogue stuff
     
-    public void selectDialogue(int dialogueEventId) {
+    public void onSelectDialogue(int dialogueEventId) {
     
     }
     
@@ -300,7 +319,15 @@ public class RogueInstance {
     public synchronized void onBattleStart(Battle battle) {
         // Add rogue blessings as battle buffs
         for (var buff : this.getBuffs().values()) {
+            // Convert blessing to battle buff
             battle.addBuff(buff.toMazeBuff());
+            // Set battle buff energy to max
+            if (buff.getExcel().getBattleEventBuffType() == RogueBuffAeonType.BattleEventBuff) {
+                RogueBuffType type = RogueBuffType.getById(getAeonBuffType());
+                if (type != null && type.getBattleEventSkill() != 0) {
+                    battle.getTurnSnapshotList().add(type.getBattleEventSkill());
+                }
+            }
         }
         // Set monster level for battle
         RogueMapExcel mapExcel = GameData.getRogueMapExcel(this.getExcel().getMapId(), this.getCurrentSiteId());
@@ -311,8 +338,15 @@ public class RogueInstance {
     
     public synchronized void onBattleFinish(Battle battle, BattleEndStatus result, BattleStatistics stats) {
         if (result == BattleEndStatus.BATTLE_END_WIN) {
-            int amount = battle.getNpcMonsters().size();
-            this.createBuffSelect(amount);
+            int roomType = this.getCurrentRoom().getExcel().getRogueRoomType();
+            if (roomType == RogueRoomType.BOSS.getVal()) {
+                // Final boss
+                this.isWin = true;
+            } else {
+                // Give blessings to player
+                int amount = battle.getNpcMonsters().size();
+                this.createBuffSelect(amount);
+            }
         }
     }
     
@@ -430,6 +464,8 @@ public class RogueInstance {
         
         // Create rogue finish info
         var proto = RogueFinishInfo.newInstance()
+                .setTotalScore(this.getRoomScore())
+                .setTalentCoin(this.getEarnedTalentCoin())
                 .setAreaId(this.getAreaId())
                 .setIsWin(this.isWin())
                 .setPassRoomCount(this.getCurrentSiteId())

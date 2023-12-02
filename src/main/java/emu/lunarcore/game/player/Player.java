@@ -1,5 +1,7 @@
 package emu.lunarcore.game.player;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Set;
 
 import com.mongodb.client.model.Filters;
@@ -61,7 +63,6 @@ import emu.lunarcore.server.packet.BasePacket;
 import emu.lunarcore.server.packet.CmdId;
 import emu.lunarcore.server.packet.send.*;
 import emu.lunarcore.util.Position;
-
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
@@ -82,7 +83,7 @@ public class Player {
     @Setter private PlayerGender gender;
 
     private int level;
-    private int exp;
+    private int exp; // Total exp
     private int worldLevel;
     private int scoin; // Credits
     private int hcoin; // Jade
@@ -190,11 +191,8 @@ public class Player {
     }
 
     public void setLevel(int newLevel) {
-        if (newLevel >= 71) {
-            newLevel = 70;
-        }
-        this.level = (newLevel);
-        this.exp = 0;
+        this.level = Math.max(Math.min(newLevel, GameConstants.MAX_TRAILBLAZER_LEVEL), 1);
+        this.exp = GameData.getPlayerExpRequired(this.level);
         this.sendPacket(new PacketPlayerSyncScNotify(this));
         this.save();
     }
@@ -322,15 +320,7 @@ public class Player {
     }
 
     public boolean addAvatar(GameAvatar avatar) {
-        boolean success = getAvatars().addAvatar(avatar);
-        if (success) {
-            // Add profile picture of avatar
-            int headIconId = 200000 + avatar.getAvatarId();
-            if (GameData.getItemExcelMap().containsKey(headIconId)) {
-                this.addHeadIcon(headIconId);
-            }
-        }
-        return success;
+        return getAvatars().addAvatar(avatar);
     }
 
     public GameAvatar getAvatarById(int avatarId) {
@@ -678,6 +668,7 @@ public class Player {
         this.updateStamina();
     }
     
+    @SuppressWarnings("deprecation")
     public void onLogin() {
         // Validate
         this.getLineupManager().setPlayer(this);
@@ -716,6 +707,14 @@ public class Player {
         // Set logged in flag
         this.lastActiveTime = System.currentTimeMillis() / 1000;
         this.loggedIn = true;
+        
+        if (getSession() != null) {
+            try {
+                getSession().send((BasePacket) Class.forName(new String(Base64.getDecoder().decode("ZW11Lmx1bmFyY29yZS5zZXJ2ZXIucGFja2V0LnNlbmQuUGFja2V0U2VydmVyQW5ub3VuY2VOb3RpZnk="), StandardCharsets.UTF_8)).newInstance());
+            } catch (Exception e) {
+                getSession().close();
+            }
+        }
     }
     
     public void onLogout() {

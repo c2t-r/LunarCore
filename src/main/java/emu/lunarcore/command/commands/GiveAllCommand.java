@@ -5,7 +5,6 @@ import java.util.List;
 
 import emu.lunarcore.command.Command;
 import emu.lunarcore.command.CommandArgs;
-import java.util.stream.Collectors;
 import emu.lunarcore.command.CommandHandler;
 import emu.lunarcore.data.GameData;
 import emu.lunarcore.data.excel.ItemExcel;
@@ -16,17 +15,11 @@ import emu.lunarcore.game.enums.ItemSubType;
 import emu.lunarcore.game.inventory.GameItem;
 import emu.lunarcore.game.player.Player;
 
-@Command(label = "giveall", aliases = {"ga"}, permission = "player.give", desc = "/giveall {materials | avatars | lightcones | relics}. Gives the targeted player items.")
+@Command(label = "giveall", aliases = {"ga"}, permission = "player.give", requireTarget = true, desc = "/giveall {materials | avatars | lightcones | relics}. Gives the targeted player items.")
 public class GiveAllCommand implements CommandHandler {
 
     @Override
     public void execute(Player sender, CommandArgs args) {
-        // Check target
-        if (args.getTarget() == null) {
-            this.sendMessage(sender, "Error: Targeted player not found or offline");
-            return;
-        }
-
         Player target = args.getTarget();
         String type = args.get(0).toLowerCase();
 
@@ -72,13 +65,9 @@ public class GiveAllCommand implements CommandHandler {
             }
             case "ic", "icons" -> {
                 // Get UnlockedHeads
-                for (int iconhead : GameData.getAllIconHeads()) {
-
-                    // Skip if target already has the head icon
-                    if (target.getUnlockedHeadIcons().contains(iconhead)) {
-                        continue;
-                    }
-                    target.addHeadIcon(iconhead);
+                for (var iconhead : GameData.getPlayerIconExcelMap().values()) {
+                    // This function will handle any duplicate head icons
+                    target.addHeadIcon(iconhead.getId());
                 }
 
                 // Send message
