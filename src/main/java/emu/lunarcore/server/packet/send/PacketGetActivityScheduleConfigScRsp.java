@@ -10,21 +10,21 @@ public class PacketGetActivityScheduleConfigScRsp extends BasePacket {
 
     public PacketGetActivityScheduleConfigScRsp() {
         super(CmdId.GetActivityScheduleConfigScRsp);
-        
+
         var data = GetActivityScheduleConfigScRsp.newInstance();
-        
+
         for (var activity : GameData.getActivityPanelExcelMap().values()) {
-            if (activity.getType() != 5) continue;
-            
+            //if (activity.getType() != 5) continue;
+
             var info = ActivityScheduleInfo.newInstance()
                     .setActivityId(activity.getPanelID())
                     .setModuleId(activity.getActivityModuleID())
                     .setBeginTime(0)
                     .setEndTime(Integer.MAX_VALUE);
-            
+
             data.addActivityScheduleList(info);
         }
-        
+
         this.setData(data);
     }
 }
