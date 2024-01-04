@@ -1,5 +1,6 @@
 package emu.lunarcore.command.commands;
 
+import emu.lunarcore.LunarCore;
 import emu.lunarcore.command.Command;
 import emu.lunarcore.command.CommandArgs;
 import emu.lunarcore.command.CommandHandler;
@@ -20,11 +21,11 @@ import emu.lunarcore.util.Utils;
 public class SpawnCommand implements CommandHandler {
 
     @Override
-    public void execute(Player sender, CommandArgs args) {
+    public void execute(CommandArgs args) {
         Player target = args.getTarget();
         
         if (target.getScene() == null) {
-            this.sendMessage(sender, "Error: Target is not in scene");
+            args.sendMessage("Error: Target is not in scene");
             return;
         }
         
@@ -33,6 +34,12 @@ public class SpawnCommand implements CommandHandler {
         int stage = Math.max(Utils.parseSafeInt(args.get(1)), 1);
         int amount = Math.max(args.getAmount(), 1);
         int radius = Math.max(args.getRank(), 5) * 1000;
+        
+        // Enforce scene max entity limit
+        if (target.getScene().getEntities().size() + amount >= LunarCore.getConfig().getServerOptions().getSceneMaxEntites()) {
+            args.sendMessage("Error: Max entities in scene reached");
+            return;
+        }
         
         // Spawn monster
         NpcMonsterExcel monsterExcel = GameData.getNpcMonsterExcelMap().get(id);
@@ -56,7 +63,7 @@ public class SpawnCommand implements CommandHandler {
             }
             
             if (monsterInfo == null || groupInfo == null) {
-                this.sendMessage(sender, "Error: No existing monster config found in this scene");
+                args.sendMessage("Error: No existing monster config found in this scene");
                 return;
             }
             
@@ -66,17 +73,17 @@ public class SpawnCommand implements CommandHandler {
                 EntityMonster monster = new EntityMonster(target.getScene(), monsterExcel, groupInfo, monsterInfo);
                 monster.getPos().set(pos);
                 monster.setEventId(monsterInfo.getEventID());
-                monster.setOverrideStageId(stage);
+                monster.setCustomStageId(stage);
                 
                 if (args.getLevel() > 0) {
-                    monster.setOverrideLevel(Math.min(args.getLevel(), 100));
+                    monster.setCustomLevel(Math.min(args.getLevel(), 100));
                 }
                 
                 target.getScene().addEntity(monster, true);
             }
             
             // Send message when done
-            this.sendMessage(sender, "Spawning " + amount + " monsters");
+            args.sendMessage("Spawning " + amount + " monsters");
             return;
         }
         
@@ -101,7 +108,7 @@ public class SpawnCommand implements CommandHandler {
             }
             
             if (propInfo == null || groupInfo == null) {
-                this.sendMessage(sender, "Error: No existing prop config found in this scene");
+                args.sendMessage("Error: No existing prop config found in this scene");
                 return;
             }
             
@@ -117,11 +124,11 @@ public class SpawnCommand implements CommandHandler {
             }
             
             // Send message when done
-            this.sendMessage(sender, "Spawning " + amount + " props");
+            args.sendMessage("Spawning " + amount + " props");
             return;
         }
 
-        this.sendMessage(sender, "Error: Invalid id");
+        args.sendMessage("Error: Invalid id");
     }
 
 }

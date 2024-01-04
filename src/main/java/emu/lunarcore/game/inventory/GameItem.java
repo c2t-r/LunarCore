@@ -49,7 +49,7 @@ public class GameItem {
     @Setter private boolean locked;
 
     @Setter private int mainAffix;
-    private List<ItemSubAffix> subAffixes;
+    private List<GameItemSubAffix> subAffixes;
 
     private int equipAvatar;
 
@@ -135,8 +135,13 @@ public class GameItem {
         return !this.isLocked() && !this.isEquipped();
     }
 
-    public void setCount(int count) {
-        this.count = count;
+    public boolean setCount(int count) {
+        if (this.count != count) {
+            this.count = count;
+            return true;
+        }
+        
+        return false;
     }
 
     public boolean setEquipAvatar(int newEquipAvatar) {
@@ -188,7 +193,7 @@ public class GameItem {
         }
 
         IntSet blacklist = new IntOpenHashSet();
-        for (ItemSubAffix subAffix : this.getSubAffixes()) {
+        for (GameItemSubAffix subAffix : this.getSubAffixes()) {
             blacklist.add(subAffix.getId());
         }
 
@@ -207,12 +212,13 @@ public class GameItem {
 
         // Add random stat
         RelicSubAffixExcel subAffix = randomList.next();
-        this.subAffixes.add(new ItemSubAffix(subAffix));
+        this.subAffixes.add(new GameItemSubAffix(subAffix));
     }
 
     private void upgradeRandomSubAffix() {
-        ItemSubAffix subAffix = Utils.randomElement(this.subAffixes);
-        subAffix.incrementCount();
+        GameItemSubAffix subAffix = Utils.randomElement(this.subAffixes);
+        var subAffixExcel = GameData.getRelicSubAffixExcel(this.getExcel().getRelicExcel().getSubAffixGroup(), subAffix.getId());
+        subAffix.incrementCount(subAffixExcel.getStepNum());
     }
     
     /**
@@ -241,7 +247,6 @@ public class GameItem {
         } else if (this.getId() != null) {
             LunarCore.getGameDatabase().delete(this);
         }
-
     }
 
     // Proto

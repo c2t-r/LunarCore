@@ -7,11 +7,9 @@ import us.hebi.quickbuf.InvalidProtocolBufferException;
 import us.hebi.quickbuf.JsonSink;
 import us.hebi.quickbuf.JsonSource;
 import us.hebi.quickbuf.MessageFactory;
-import us.hebi.quickbuf.ProtoEnum;
 import us.hebi.quickbuf.ProtoMessage;
 import us.hebi.quickbuf.ProtoSink;
 import us.hebi.quickbuf.ProtoSource;
-import us.hebi.quickbuf.ProtoUtil;
 import us.hebi.quickbuf.RepeatedInt;
 
 public final class QuestOuterClass {
@@ -22,27 +20,27 @@ public final class QuestOuterClass {
     private static final long serialVersionUID = 0L;
 
     /**
-     * <code>optional int64 finish_time = 13;</code>
+     * <code>optional int64 finish_time = 12;</code>
      */
     private long finishTime;
 
     /**
-     * <code>optional uint32 id = 3;</code>
-     */
-    private int id;
-
-    /**
-     * <code>optional uint32 progress = 9;</code>
+     * <code>optional uint32 progress = 8;</code>
      */
     private int progress;
 
     /**
-     * <code>optional .Quest.QuestStatus status = 5;</code>
+     * <code>optional uint32 id = 11;</code>
+     */
+    private int id;
+
+    /**
+     * <code>optional .QuestStatus status = 13;</code>
      */
     private int status;
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      */
     private final RepeatedInt takenAchievementLevelList = RepeatedInt.newEmptyInstance();
 
@@ -57,7 +55,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional int64 finish_time = 13;</code>
+     * <code>optional int64 finish_time = 12;</code>
      * @return whether the finishTime field is set
      */
     public boolean hasFinishTime() {
@@ -65,7 +63,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional int64 finish_time = 13;</code>
+     * <code>optional int64 finish_time = 12;</code>
      * @return this
      */
     public Quest clearFinishTime() {
@@ -75,7 +73,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional int64 finish_time = 13;</code>
+     * <code>optional int64 finish_time = 12;</code>
      * @return the finishTime
      */
     public long getFinishTime() {
@@ -83,7 +81,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional int64 finish_time = 13;</code>
+     * <code>optional int64 finish_time = 12;</code>
      * @param value the finishTime to set
      * @return this
      */
@@ -94,62 +92,25 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional uint32 id = 3;</code>
-     * @return whether the id field is set
+     * <code>optional uint32 progress = 8;</code>
+     * @return whether the progress field is set
      */
-    public boolean hasId() {
+    public boolean hasProgress() {
       return (bitField0_ & 0x00000002) != 0;
     }
 
     /**
-     * <code>optional uint32 id = 3;</code>
-     * @return this
-     */
-    public Quest clearId() {
-      bitField0_ &= ~0x00000002;
-      id = 0;
-      return this;
-    }
-
-    /**
-     * <code>optional uint32 id = 3;</code>
-     * @return the id
-     */
-    public int getId() {
-      return id;
-    }
-
-    /**
-     * <code>optional uint32 id = 3;</code>
-     * @param value the id to set
-     * @return this
-     */
-    public Quest setId(final int value) {
-      bitField0_ |= 0x00000002;
-      id = value;
-      return this;
-    }
-
-    /**
-     * <code>optional uint32 progress = 9;</code>
-     * @return whether the progress field is set
-     */
-    public boolean hasProgress() {
-      return (bitField0_ & 0x00000004) != 0;
-    }
-
-    /**
-     * <code>optional uint32 progress = 9;</code>
+     * <code>optional uint32 progress = 8;</code>
      * @return this
      */
     public Quest clearProgress() {
-      bitField0_ &= ~0x00000004;
+      bitField0_ &= ~0x00000002;
       progress = 0;
       return this;
     }
 
     /**
-     * <code>optional uint32 progress = 9;</code>
+     * <code>optional uint32 progress = 8;</code>
      * @return the progress
      */
     public int getProgress() {
@@ -157,18 +118,55 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional uint32 progress = 9;</code>
+     * <code>optional uint32 progress = 8;</code>
      * @param value the progress to set
      * @return this
      */
     public Quest setProgress(final int value) {
-      bitField0_ |= 0x00000004;
+      bitField0_ |= 0x00000002;
       progress = value;
       return this;
     }
 
     /**
-     * <code>optional .Quest.QuestStatus status = 5;</code>
+     * <code>optional uint32 id = 11;</code>
+     * @return whether the id field is set
+     */
+    public boolean hasId() {
+      return (bitField0_ & 0x00000004) != 0;
+    }
+
+    /**
+     * <code>optional uint32 id = 11;</code>
+     * @return this
+     */
+    public Quest clearId() {
+      bitField0_ &= ~0x00000004;
+      id = 0;
+      return this;
+    }
+
+    /**
+     * <code>optional uint32 id = 11;</code>
+     * @return the id
+     */
+    public int getId() {
+      return id;
+    }
+
+    /**
+     * <code>optional uint32 id = 11;</code>
+     * @param value the id to set
+     * @return this
+     */
+    public Quest setId(final int value) {
+      bitField0_ |= 0x00000004;
+      id = value;
+      return this;
+    }
+
+    /**
+     * <code>optional .QuestStatus status = 13;</code>
      * @return whether the status field is set
      */
     public boolean hasStatus() {
@@ -176,7 +174,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional .Quest.QuestStatus status = 5;</code>
+     * <code>optional .QuestStatus status = 13;</code>
      * @return this
      */
     public Quest clearStatus() {
@@ -186,11 +184,11 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional .Quest.QuestStatus status = 5;</code>
+     * <code>optional .QuestStatus status = 13;</code>
      * @return the status
      */
-    public QuestStatus getStatus() {
-      return QuestStatus.forNumber(status);
+    public QuestStatusOuterClass.QuestStatus getStatus() {
+      return QuestStatusOuterClass.QuestStatus.forNumber(status);
     }
 
     /**
@@ -206,7 +204,7 @@ public final class QuestOuterClass {
     /**
      * Sets the value of the internal enum store. This does not
      * do any validity checks, so be sure to use appropriate value
-     * constants from {@link QuestStatus}. Setting an invalid value
+     * constants from {@link QuestStatusOuterClass.QuestStatus}. Setting an invalid value
      * can cause {@link Quest#getStatus()} to return null
      *
      * @param value the numeric wire value to set
@@ -219,18 +217,18 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>optional .Quest.QuestStatus status = 5;</code>
+     * <code>optional .QuestStatus status = 13;</code>
      * @param value the status to set
      * @return this
      */
-    public Quest setStatus(final QuestStatus value) {
+    public Quest setStatus(final QuestStatusOuterClass.QuestStatus value) {
       bitField0_ |= 0x00000008;
       status = value.getNumber();
       return this;
     }
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      * @return whether the takenAchievementLevelList field is set
      */
     public boolean hasTakenAchievementLevelList() {
@@ -238,7 +236,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      * @return this
      */
     public Quest clearTakenAchievementLevelList() {
@@ -248,7 +246,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      *
      * This method returns the internal storage object without modifying any has state.
      * The returned object should not be modified and be treated as read-only.
@@ -262,7 +260,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      *
      * This method returns the internal storage object and sets the corresponding
      * has state. The returned object will become part of this message and its
@@ -276,7 +274,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      * @param value the takenAchievementLevelList to add
      * @return this
      */
@@ -287,7 +285,7 @@ public final class QuestOuterClass {
     }
 
     /**
-     * <code>repeated uint32 taken_achievement_level_list = 7;</code>
+     * <code>repeated uint32 taken_achievement_level_list = 3;</code>
      * @param values the takenAchievementLevelList to add
      * @return this
      */
@@ -303,8 +301,8 @@ public final class QuestOuterClass {
       if ((bitField0_ | other.bitField0_) != 0) {
         bitField0_ = other.bitField0_;
         finishTime = other.finishTime;
-        id = other.id;
         progress = other.progress;
+        id = other.id;
         status = other.status;
         takenAchievementLevelList.copyFrom(other.takenAchievementLevelList);
       }
@@ -320,11 +318,11 @@ public final class QuestOuterClass {
       if (other.hasFinishTime()) {
         setFinishTime(other.finishTime);
       }
-      if (other.hasId()) {
-        setId(other.id);
-      }
       if (other.hasProgress()) {
         setProgress(other.progress);
+      }
+      if (other.hasId()) {
+        setId(other.id);
       }
       if (other.hasStatus()) {
         setStatusValue(other.status);
@@ -343,8 +341,8 @@ public final class QuestOuterClass {
       cachedSize = -1;
       bitField0_ = 0;
       finishTime = 0L;
-      id = 0;
       progress = 0;
+      id = 0;
       status = 0;
       takenAchievementLevelList.clear();
       return this;
@@ -372,8 +370,8 @@ public final class QuestOuterClass {
       Quest other = (Quest) o;
       return bitField0_ == other.bitField0_
         && (!hasFinishTime() || finishTime == other.finishTime)
-        && (!hasId() || id == other.id)
         && (!hasProgress() || progress == other.progress)
+        && (!hasId() || id == other.id)
         && (!hasStatus() || status == other.status)
         && (!hasTakenAchievementLevelList() || takenAchievementLevelList.equals(other.takenAchievementLevelList));
     }
@@ -381,24 +379,24 @@ public final class QuestOuterClass {
     @Override
     public void writeTo(final ProtoSink output) throws IOException {
       if ((bitField0_ & 0x00000001) != 0) {
-        output.writeRawByte((byte) 104);
+        output.writeRawByte((byte) 96);
         output.writeInt64NoTag(finishTime);
       }
       if ((bitField0_ & 0x00000002) != 0) {
-        output.writeRawByte((byte) 24);
-        output.writeUInt32NoTag(id);
-      }
-      if ((bitField0_ & 0x00000004) != 0) {
-        output.writeRawByte((byte) 72);
+        output.writeRawByte((byte) 64);
         output.writeUInt32NoTag(progress);
       }
+      if ((bitField0_ & 0x00000004) != 0) {
+        output.writeRawByte((byte) 88);
+        output.writeUInt32NoTag(id);
+      }
       if ((bitField0_ & 0x00000008) != 0) {
-        output.writeRawByte((byte) 40);
+        output.writeRawByte((byte) 104);
         output.writeEnumNoTag(status);
       }
       if ((bitField0_ & 0x00000010) != 0) {
         for (int i = 0; i < takenAchievementLevelList.length(); i++) {
-          output.writeRawByte((byte) 56);
+          output.writeRawByte((byte) 24);
           output.writeUInt32NoTag(takenAchievementLevelList.array()[i]);
         }
       }
@@ -411,10 +409,10 @@ public final class QuestOuterClass {
         size += 1 + ProtoSink.computeInt64SizeNoTag(finishTime);
       }
       if ((bitField0_ & 0x00000002) != 0) {
-        size += 1 + ProtoSink.computeUInt32SizeNoTag(id);
+        size += 1 + ProtoSink.computeUInt32SizeNoTag(progress);
       }
       if ((bitField0_ & 0x00000004) != 0) {
-        size += 1 + ProtoSink.computeUInt32SizeNoTag(progress);
+        size += 1 + ProtoSink.computeUInt32SizeNoTag(id);
       }
       if ((bitField0_ & 0x00000008) != 0) {
         size += 1 + ProtoSink.computeEnumSizeNoTag(status);
@@ -432,46 +430,46 @@ public final class QuestOuterClass {
       int tag = input.readTag();
       while (true) {
         switch (tag) {
-          case 104: {
+          case 96: {
             // finishTime
             finishTime = input.readInt64();
             bitField0_ |= 0x00000001;
             tag = input.readTag();
-            if (tag != 24) {
+            if (tag != 64) {
               break;
             }
           }
-          case 24: {
-            // id
-            id = input.readUInt32();
-            bitField0_ |= 0x00000002;
-            tag = input.readTag();
-            if (tag != 72) {
-              break;
-            }
-          }
-          case 72: {
+          case 64: {
             // progress
             progress = input.readUInt32();
-            bitField0_ |= 0x00000004;
+            bitField0_ |= 0x00000002;
             tag = input.readTag();
-            if (tag != 40) {
+            if (tag != 88) {
               break;
             }
           }
-          case 40: {
+          case 88: {
+            // id
+            id = input.readUInt32();
+            bitField0_ |= 0x00000004;
+            tag = input.readTag();
+            if (tag != 104) {
+              break;
+            }
+          }
+          case 104: {
             // status
             final int value = input.readInt32();
-            if (QuestStatus.forNumber(value) != null) {
+            if (QuestStatusOuterClass.QuestStatus.forNumber(value) != null) {
               status = value;
               bitField0_ |= 0x00000008;
             }
             tag = input.readTag();
-            if (tag != 58) {
+            if (tag != 26) {
               break;
             }
           }
-          case 58: {
+          case 26: {
             // takenAchievementLevelList [packed=true]
             input.readPackedUInt32(takenAchievementLevelList, tag);
             bitField0_ |= 0x00000010;
@@ -490,7 +488,7 @@ public final class QuestOuterClass {
             tag = input.readTag();
             break;
           }
-          case 56: {
+          case 24: {
             // takenAchievementLevelList [packed=false]
             tag = input.readRepeatedUInt32(takenAchievementLevelList, tag);
             bitField0_ |= 0x00000010;
@@ -507,13 +505,13 @@ public final class QuestOuterClass {
         output.writeInt64(FieldNames.finishTime, finishTime);
       }
       if ((bitField0_ & 0x00000002) != 0) {
-        output.writeUInt32(FieldNames.id, id);
-      }
-      if ((bitField0_ & 0x00000004) != 0) {
         output.writeUInt32(FieldNames.progress, progress);
       }
+      if ((bitField0_ & 0x00000004) != 0) {
+        output.writeUInt32(FieldNames.id, id);
+      }
       if ((bitField0_ & 0x00000008) != 0) {
-        output.writeEnum(FieldNames.status, status, QuestStatus.converter());
+        output.writeEnum(FieldNames.status, status, QuestStatusOuterClass.QuestStatus.converter());
       }
       if ((bitField0_ & 0x00000010) != 0) {
         output.writeRepeatedUInt32(FieldNames.takenAchievementLevelList, takenAchievementLevelList);
@@ -540,10 +538,10 @@ public final class QuestOuterClass {
             }
             break;
           }
-          case 3355: {
-            if (input.isAtField(FieldNames.id)) {
+          case -1001078227: {
+            if (input.isAtField(FieldNames.progress)) {
               if (!input.trySkipNullValue()) {
-                id = input.readUInt32();
+                progress = input.readUInt32();
                 bitField0_ |= 0x00000002;
               }
             } else {
@@ -551,10 +549,10 @@ public final class QuestOuterClass {
             }
             break;
           }
-          case -1001078227: {
-            if (input.isAtField(FieldNames.progress)) {
+          case 3355: {
+            if (input.isAtField(FieldNames.id)) {
               if (!input.trySkipNullValue()) {
-                progress = input.readUInt32();
+                id = input.readUInt32();
                 bitField0_ |= 0x00000004;
               }
             } else {
@@ -565,7 +563,7 @@ public final class QuestOuterClass {
           case -892481550: {
             if (input.isAtField(FieldNames.status)) {
               if (!input.trySkipNullValue()) {
-                final QuestStatus value = input.readEnum(QuestStatus.converter());
+                final QuestStatusOuterClass.QuestStatus value = input.readEnum(QuestStatusOuterClass.QuestStatus.converter());
                 if (value != null) {
                   status = value.getNumber();
                   bitField0_ |= 0x00000008;
@@ -629,159 +627,6 @@ public final class QuestOuterClass {
       return QuestFactory.INSTANCE;
     }
 
-    /**
-     * Protobuf enum {@code QuestStatus}
-     */
-    public enum QuestStatus implements ProtoEnum<QuestStatus> {
-      /**
-       * <code>QUEST_NONE = 0;</code>
-       */
-      QUEST_NONE("QUEST_NONE", 0),
-
-      /**
-       * <code>QUEST_DOING = 1;</code>
-       */
-      QUEST_DOING("QUEST_DOING", 1),
-
-      /**
-       * <code>QUEST_FINISH = 2;</code>
-       */
-      QUEST_FINISH("QUEST_FINISH", 2),
-
-      /**
-       * <code>QUEST_CLOSE = 3;</code>
-       */
-      QUEST_CLOSE("QUEST_CLOSE", 3),
-
-      /**
-       * <code>QUEST_DELETE = 4;</code>
-       */
-      QUEST_DELETE("QUEST_DELETE", 4);
-
-      /**
-       * <code>QUEST_NONE = 0;</code>
-       */
-      public static final int QUEST_NONE_VALUE = 0;
-
-      /**
-       * <code>QUEST_DOING = 1;</code>
-       */
-      public static final int QUEST_DOING_VALUE = 1;
-
-      /**
-       * <code>QUEST_FINISH = 2;</code>
-       */
-      public static final int QUEST_FINISH_VALUE = 2;
-
-      /**
-       * <code>QUEST_CLOSE = 3;</code>
-       */
-      public static final int QUEST_CLOSE_VALUE = 3;
-
-      /**
-       * <code>QUEST_DELETE = 4;</code>
-       */
-      public static final int QUEST_DELETE_VALUE = 4;
-
-      private final String name;
-
-      private final int number;
-
-      private QuestStatus(String name, int number) {
-        this.name = name;
-        this.number = number;
-      }
-
-      /**
-       * @return the string representation of enum entry
-       */
-      @Override
-      public String getName() {
-        return name;
-      }
-
-      /**
-       * @return the numeric wire value of this enum entry
-       */
-      @Override
-      public int getNumber() {
-        return number;
-      }
-
-      /**
-       * @return a converter that maps between this enum's numeric and text representations
-       */
-      public static ProtoEnum.EnumConverter<QuestStatus> converter() {
-        return QuestStatusConverter.INSTANCE;
-      }
-
-      /**
-       * @param value The numeric wire value of the corresponding enum entry.
-       * @return The enum associated with the given numeric wire value, or null if unknown.
-       */
-      public static QuestStatus forNumber(int value) {
-        return QuestStatusConverter.INSTANCE.forNumber(value);
-      }
-
-      /**
-       * @param value The numeric wire value of the corresponding enum entry.
-       * @param other Fallback value in case the value is not known.
-       * @return The enum associated with the given numeric wire value, or the fallback value if unknown.
-       */
-      public static QuestStatus forNumberOr(int number, QuestStatus other) {
-        QuestStatus value = forNumber(number);
-        return value == null ? other : value;
-      }
-
-      enum QuestStatusConverter implements ProtoEnum.EnumConverter<QuestStatus> {
-        INSTANCE;
-
-        private static final QuestStatus[] lookup = new QuestStatus[5];
-
-        static {
-          lookup[0] = QUEST_NONE;
-          lookup[1] = QUEST_DOING;
-          lookup[2] = QUEST_FINISH;
-          lookup[3] = QUEST_CLOSE;
-          lookup[4] = QUEST_DELETE;
-        }
-
-        @Override
-        public final QuestStatus forNumber(final int value) {
-          if (value >= 0 && value < lookup.length) {
-            return lookup[value];
-          }
-          return null;
-        }
-
-        @Override
-        public final QuestStatus forName(final CharSequence value) {
-          if (value.length() == 10) {
-            if (ProtoUtil.isEqual("QUEST_NONE", value)) {
-              return QUEST_NONE;
-            }
-          }
-          if (value.length() == 11) {
-            if (ProtoUtil.isEqual("QUEST_DOING", value)) {
-              return QUEST_DOING;
-            }
-            if (ProtoUtil.isEqual("QUEST_CLOSE", value)) {
-              return QUEST_CLOSE;
-            }
-          }
-          if (value.length() == 12) {
-            if (ProtoUtil.isEqual("QUEST_FINISH", value)) {
-              return QUEST_FINISH;
-            }
-            if (ProtoUtil.isEqual("QUEST_DELETE", value)) {
-              return QUEST_DELETE;
-            }
-          }
-          return null;
-        }
-      }
-    }
-
     private enum QuestFactory implements MessageFactory<Quest> {
       INSTANCE;
 
@@ -797,9 +642,9 @@ public final class QuestOuterClass {
     static class FieldNames {
       static final FieldName finishTime = FieldName.forField("finishTime", "finish_time");
 
-      static final FieldName id = FieldName.forField("id");
-
       static final FieldName progress = FieldName.forField("progress");
+
+      static final FieldName id = FieldName.forField("id");
 
       static final FieldName status = FieldName.forField("status");
 

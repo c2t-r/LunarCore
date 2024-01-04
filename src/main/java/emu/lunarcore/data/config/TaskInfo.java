@@ -21,9 +21,11 @@ public class TaskInfo {
     private boolean TriggerBattle = true;
     private DynamicFloat LifeTime;
     
+    @SerializedName(value = "OnAttack", alternate = {"OnBattle"})
     private List<TaskInfo> OnAttack;
     private List<TaskInfo> SuccessTaskList;
     private List<TaskInfo> OnProjectileHit;
+    private List<TaskInfo> OnProjectileLifetimeFinish;
     
     public String getType() {
         return this.$type;

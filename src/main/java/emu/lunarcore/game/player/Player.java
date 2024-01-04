@@ -1,9 +1,5 @@
 package emu.lunarcore.game.player;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Set;
-
 import com.mongodb.client.model.Filters;
 
 import dev.morphia.annotations.Entity;
@@ -16,6 +12,8 @@ import emu.lunarcore.data.GameData;
 import emu.lunarcore.data.config.AnchorInfo;
 import emu.lunarcore.data.config.FloorInfo;
 import emu.lunarcore.data.config.PropInfo;
+import emu.lunarcore.data.excel.InteractExcel;
+import emu.lunarcore.data.excel.ItemUseExcel;
 import emu.lunarcore.data.excel.MapEntranceExcel;
 import emu.lunarcore.data.excel.MazePlaneExcel;
 import emu.lunarcore.game.account.Account;
@@ -45,6 +43,7 @@ import emu.lunarcore.game.rogue.RogueInstance;
 import emu.lunarcore.game.rogue.RogueManager;
 import emu.lunarcore.game.rogue.RogueTalentData;
 import emu.lunarcore.game.scene.Scene;
+import emu.lunarcore.game.scene.SceneBuff;
 import emu.lunarcore.game.scene.entity.EntityProp;
 import emu.lunarcore.game.scene.entity.GameEntity;
 import emu.lunarcore.game.scene.triggers.PropTriggerType;
@@ -59,29 +58,32 @@ import emu.lunarcore.proto.SimpleAvatarInfoOuterClass.SimpleAvatarInfo;
 import emu.lunarcore.proto.SimpleInfoOuterClass.SimpleInfo;
 import emu.lunarcore.server.game.GameServer;
 import emu.lunarcore.server.game.GameSession;
+import emu.lunarcore.server.game.Tickable;
 import emu.lunarcore.server.packet.BasePacket;
 import emu.lunarcore.server.packet.CmdId;
 import emu.lunarcore.server.packet.send.*;
 import emu.lunarcore.util.Position;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import emu.lunarcore.util.Utils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity(value = "players", useDiscriminator = false)
 @Getter
-public class Player {
+public class Player implements Tickable {
     @Id private int uid;
     @Indexed private String accountUid;
     private String name;
     private String signature;
+    private int birthday;
+    private int curBasicType;
     private int headIcon;
     private int phoneTheme;
     private int chatBubble;
-    private int birthday;
-    private int curBasicType;
+    private int currentBgm;
     @Setter private PlayerGender gender;
-
+    
     private int level;
     private int exp; // Total exp
     private int worldLevel;
@@ -101,10 +103,7 @@ public class Player {
     private int planeId;
     private int floorId;
     private int entryId;
-
-    private int currentBgm;
     
-    private IntSet unlockedHeadIcons;
     private long lastActiveTime;
     
     // Player managers
@@ -130,6 +129,8 @@ public class Player {
     private transient boolean loggedIn;
     private transient boolean inAnchorRange;
     private transient int nextBattleId;
+    private transient PlayerUnlockData unlocks;
+    private transient Int2ObjectMap<SceneBuff> foodBuffs;
     
     @Setter private transient boolean paused;
     
@@ -137,6 +138,8 @@ public class Player {
     public Player() {
         this.curBasicType = GameConstants.TRAILBLAZER_AVATAR_ID;
         this.gender = PlayerGender.GENDER_MAN;
+        this.foodBuffs = new Int2ObjectOpenHashMap<>();
+        
         this.avatars = new AvatarStorage(this);
         this.inventory = new Inventory(this);
         this.chatManager = new ChatManager(this);
@@ -154,22 +157,26 @@ public class Player {
         this.isNew = true;
         this.initUid();
         this.resetPosition();
+        this.setLevel(LunarCore.getConfig().getServerOptions().startTrailblazerLevel);
         
         // Setup player data
         this.name = GameConstants.DEFAULT_NAME;
         this.signature = "";
-        this.headIcon = 200001;
         this.phoneTheme = 221000;
         this.chatBubble = 220000;
-        this.level = 1;
         this.stamina = GameConstants.MAX_STAMINA;
         this.nextStaminaRecover = System.currentTimeMillis();
 
         this.currentBgm = 210000;
         
-        this.unlockedHeadIcons = new IntOpenHashSet();
         this.lineupManager = new LineupManager(this);
         this.gachaInfo = new PlayerGachaInfo();
+        this.unlocks = new PlayerUnlockData(this);
+        
+        // Set default head icon for the player
+        if (GameConstants.DEFAULT_HEAD_ICONS.length > 0) {
+            this.headIcon = GameConstants.DEFAULT_HEAD_ICONS[0];
+        }
         
         // Setup hero paths
         this.getAvatars().validateHeroPaths();
@@ -190,11 +197,37 @@ public class Player {
         return session.getAccount();
     }
 
-    public void setLevel(int newLevel) {
-        this.level = Math.max(Math.min(newLevel, GameConstants.MAX_TRAILBLAZER_LEVEL), 1);
+    public void setLevel(int lvl) {
+        int oldLevel = this.level;
+        int newLevel = Math.max(Math.min(lvl, GameConstants.MAX_TRAILBLAZER_LEVEL), 1);
+        this.onLevelChange(oldLevel, newLevel);
+        
+        this.level = newLevel;
         this.exp = GameData.getPlayerExpRequired(this.level);
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
-        this.save();
+        
+        if (this.isOnline()) {
+            this.getSession().send(new PacketPlayerSyncScNotify(this));
+            this.save();
+        }
+    }
+    
+    private void onLevelChange(int oldLevel, int newLevel) {
+        // Auto upgrades the player's world level when they level up to the right level
+        if (LunarCore.getConfig().getServerOptions().autoUpgradeWorldLevel) {
+            int maxWorldLevel = 0;
+            
+            for (int i = 0; i < GameConstants.WORLD_LEVEL_UPGRADES.length; i++) {
+                if (newLevel >= GameConstants.WORLD_LEVEL_UPGRADES[i]) {
+                    maxWorldLevel = i;
+                } else {
+                    break;
+                }
+            }
+            
+            if (maxWorldLevel > this.getWorldLevel()) {
+                this.setWorldLevel(maxWorldLevel);
+            }
+        }
     }
     
     public boolean isOnline() {
@@ -242,33 +275,16 @@ public class Player {
     }
     
     public void setWorldLevel(int level) {
+        if (this.worldLevel == level) {
+            return;
+        }
+        
         this.worldLevel = level;
-        this.save();
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
-    }
-
-    public int getWorldLevel() {
-        return this.worldLevel;
-    }
-
-    public void setPhoneTheme(int themeId) {
-        this.phoneTheme = themeId;
-        this.save();
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
-    }
-
-    public int getPhoneTheme() {
-        return this.phoneTheme;
-    }
-
-    public void setChatBubble(int bubbleId) {
-        this.chatBubble = bubbleId;
-        this.save();
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
-    }
-
-    public int getChatBubble() {
-        return this.chatBubble;
+        
+        if (this.isOnline()) {
+            this.save();
+            this.getSession().send(new PacketPlayerSyncScNotify(this));
+        }
     }
 
     public int getCurrentBgm() {
@@ -282,29 +298,6 @@ public class Player {
     public void setCurrentBgm(int musicId) {
         this.currentBgm = musicId;
         this.save();
-    }
-    
-    public Set<Integer> getUnlockedHeadIcons() {
-        if (this.unlockedHeadIcons == null) {
-            this.unlockedHeadIcons = new IntOpenHashSet();
-        }
-        return this.unlockedHeadIcons;
-    }
-    
-    public void addHeadIcon(int headIconId) {
-        boolean success = this.getUnlockedHeadIcons().add(headIconId);
-        if (success) {
-            this.sendPacket(new PacketPlayerSyncScNotify(this.toBoardData()));
-        }
-    }
-    
-    public boolean setHeadIcon(int id) {
-        if (this.getUnlockedHeadIcons().contains(id)) {
-            this.headIcon = id;
-            this.save();
-            return true;
-        }
-        return false;
     }
     
     public void resetPosition() {
@@ -332,6 +325,37 @@ public class Player {
         return getAvatars().getAvatarById(avatarId);
     }
     
+    public boolean setHeadIcon(int id) {
+        if (this.getUnlocks().getHeadIcons().contains(id)) {
+            this.headIcon = id;
+            if (this.isLoggedIn()) {
+                this.save();
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    public boolean setChatBubble(int id) {
+        if (this.getUnlocks().getChatBubbles().contains(id)) {
+            this.chatBubble = id;
+            this.save();
+            this.sendPacket(new PacketPlayerSyncScNotify(this));
+            return true;
+        }
+        return false;
+    }
+    
+    public boolean setPhoneTheme(int id) {
+        if (this.getUnlocks().getPhoneThemes().contains(id)) {
+            this.phoneTheme = id;
+            this.save();
+            this.sendPacket(new PacketPlayerSyncScNotify(this));
+            return true;
+        }
+        return false;
+    }
+    
     public PlayerLineup getCurrentLineup() {
         return this.getLineupManager().getCurrentLineup();
     }
@@ -357,27 +381,40 @@ public class Player {
     }
 
     public void addSCoin(int amount) {
-        this.scoin += amount;
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
+        int newAmount = Utils.safeAdd(this.scoin, amount);
+        if (this.scoin != newAmount) {
+            this.scoin = newAmount;
+            this.sendPacket(new PacketPlayerSyncScNotify(this));
+        }
     }
 
     public void addHCoin(int amount) {
-        this.hcoin += amount;
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
+        int newAmount = Utils.safeAdd(this.hcoin, amount);
+        if (this.hcoin != newAmount) {
+            this.hcoin = newAmount;
+            this.sendPacket(new PacketPlayerSyncScNotify(this));
+        }
     }
 
     public void addMCoin(int amount) {
-        this.mcoin += amount;
-        this.sendPacket(new PacketPlayerSyncScNotify(this));
+        int newAmount = Utils.safeAdd(this.mcoin, amount);
+        if (this.mcoin != newAmount) {
+            this.mcoin = newAmount;
+            this.sendPacket(new PacketPlayerSyncScNotify(this));
+        }
     }
     
     public void addTalentPoints(int amount) {
-        this.talentPoints += amount;
-        this.sendPacket(new PacketSyncRogueVirtualItemInfoScNotify(this));
+        int newAmount = Utils.safeAdd(this.talentPoints, amount);
+        if (this.talentPoints != newAmount) {
+            this.talentPoints = newAmount;
+            this.sendPacket(new PacketSyncRogueVirtualItemInfoScNotify(this));
+        }
     }
 
     public void addExp(int amount) {
-        // Required exp
+        // Setup
+        int oldLevel = this.level;
         int reqExp = GameData.getPlayerExpRequired(level + 1);
 
         // Add exp
@@ -388,7 +425,8 @@ public class Player {
             reqExp = GameData.getPlayerExpRequired(this.level + 1);
         }
 
-        // Save
+        // Update level and change property
+        this.onLevelChange(oldLevel, this.level);
         this.save();
 
         // Send packet
@@ -424,7 +462,12 @@ public class Player {
     }
     
     public void setBattle(Battle battle) {
+        // Set battle first
         this.battle = battle;
+        // Scene handler
+        if (this.getScene() != null) {
+            this.getScene().onBattleStart(battle);
+        }
     }
     
     public void forceQuitBattle() {
@@ -435,7 +478,7 @@ public class Player {
     }
     
     public void addStamina(int amount) {
-        this.stamina += amount;
+        this.stamina = Utils.safeAdd(this.stamina, amount);
         this.sendPacket(new PacketStaminaInfoScNotify(this));
     }
     
@@ -461,27 +504,26 @@ public class Player {
         return amount;
     }
     
-    private void updateStamina() {
-        // Get current timestamp
-        long time = System.currentTimeMillis();
+    private void updateStamina(long timestamp) {
+        // Setup on change flag
         boolean hasChanged = false;
         
         // Check if we can add stamina
-        while (time >= this.nextStaminaRecover) {
+        while (timestamp >= this.nextStaminaRecover) {
             // Add stamina
             if (this.stamina < GameConstants.MAX_STAMINA) {
                 this.stamina += 1;
                 hasChanged = true;
             } else if (this.stamina < GameConstants.MAX_STAMINA_RESERVE) {
                 double rate = LunarCore.getConfig().getServerOptions().getStaminaReserveRecoveryRate();
-                double amount = (time - this.nextStaminaRecover) / (rate * 1000D);
+                double amount = (timestamp - this.nextStaminaRecover) / (rate * 1000D);
                 this.staminaReserve = Math.min(this.staminaReserve + amount, GameConstants.MAX_STAMINA_RESERVE);
                 hasChanged = true;
             }
             
             // Calculate next stamina recover time
             if (this.stamina >= GameConstants.MAX_STAMINA) {
-                this.nextStaminaRecover = time;
+                this.nextStaminaRecover = timestamp;
             }
             
             this.nextStaminaRecover += LunarCore.getConfig().getServerOptions().getStaminaRecoveryRate() * 1000;
@@ -493,7 +535,51 @@ public class Player {
         }
     }
     
-    public EntityProp interactWithProp(int propEntityId) {
+    public synchronized boolean addFoodBuff(int type, ItemUseExcel itemUseExcel) {
+        // Get maze excel
+        var excel = GameData.getMazeBuffExcel(itemUseExcel.getMazeBuffID(), 1);
+        if (excel == null) return false;
+        
+        // Create new buff
+        var buff = new SceneBuff(itemUseExcel.getMazeBuffID());
+        buff.setCount(Math.max(itemUseExcel.getActivityCount(), 1));
+        
+        int avatarEntityId = getCurrentLeaderAvatar().getEntityId();
+        var oldBuff = this.getFoodBuffs().put(type, buff);
+        
+        // Send packets
+        if (oldBuff != null) {
+            this.sendPacket(new PacketSyncEntityBuffChangeListScNotify(avatarEntityId, oldBuff.getBuffId()));
+        }
+        
+        this.sendPacket(new PacketSyncEntityBuffChangeListScNotify(avatarEntityId, buff));
+        return true;
+    }
+    
+    public synchronized boolean removeFoodBuffs(int amount) {
+        // Sanity check
+        if (getFoodBuffs().size() == 0) return false;
+        
+        // Cache current avatar entity id
+        int avatarEntityId = getCurrentLeaderAvatar().getEntityId();
+        
+        // Remove and send packet for each buff removed
+        for (var it = getFoodBuffs().int2ObjectEntrySet().iterator(); it.hasNext();) {
+            var entry = it.next();
+            var buff = entry.getValue();
+            
+            if (buff.decrementAndGet() <= 0) {
+                it.remove();
+                this.sendPacket(new PacketSyncEntityBuffChangeListScNotify(avatarEntityId, buff.getBuffId()));
+            } else {
+                this.sendPacket(new PacketSyncEntityBuffChangeListScNotify(avatarEntityId, buff));
+            }
+        }
+        
+        return true;
+    }
+    
+    public EntityProp interactWithProp(int interactId, int propEntityId) {
         // Sanity
         if (this.getScene() == null) return null;
         
@@ -507,33 +593,44 @@ public class Player {
             return null;
         }
         
-        // Handle prop interaction action
+        // Get interact handler
+        InteractExcel interactExcel = GameData.getInteractExcelMap().get(interactId);
+        if (interactExcel == null) {
+            return prop;
+        }
+        
+        // Validate
+        if (interactExcel.getSrcState() != null && prop.getState() != interactExcel.getSrcState()) {
+            return prop;
+        }
+        
+        // Save old state
+        PropState oldState = prop.getState();
+        
+        // Set group and prop state
+        this.sendPacket(new PacketGroupStateChangeScNotify(getEntryId(), prop.getGroupId(), interactExcel.getTargetState()));
+        prop.setState(interactExcel.getTargetState());
+        
+        // Handle any extra interaction actions
         switch (prop.getExcel().getPropType()) {
             case PROP_TREASURE_CHEST -> {
-                if (prop.getState() == PropState.ChestClosed) {
-                    // Open chest
-                    prop.setState(PropState.ChestUsed);
+                if (oldState == PropState.ChestClosed && prop.getState() == PropState.ChestUsed) {
                     // Handle drops
                     var drops = this.getServer().getDropService().calculateDropsFromProp(prop.getPropId());
                     this.getInventory().addItems(drops, true);
-                    // Done
-                    return prop;
-                } else {
-                    return null;
                 }
             }
             case PROP_MAZE_PUZZLE -> {
-                // Finish puzzle
-                prop.setState(PropState.Locked);
                 // Trigger event
-                this.getScene().invokeTrigger(PropTriggerType.PUZZLE_FINISH, prop.getGroupId(), prop.getInstId());
-                //
-                return prop;
+                this.getScene().invokePropTrigger(PropTriggerType.PUZZLE_FINISH, prop.getGroupId(), prop.getInstId());
             }
             default -> {
-                return null;
+                
             }
         }
+        
+        // Return prop when we are done
+        return prop;
     }
     
     public void onMove() {
@@ -664,13 +761,17 @@ public class Player {
         }
     }
     
-    public void onTick() {
-        this.updateStamina();
+    public void onTick(long timestamp, long delta) {
+        // Update stamina
+        this.updateStamina(timestamp);
+        // Scene update
+        if (this.getScene() != null) {
+            this.getScene().onTick(timestamp, delta);
+        }
     }
     
-    @SuppressWarnings("deprecation")
     public void onLogin() {
-        // Validate
+        // Set up lineup manager
         this.getLineupManager().setPlayer(this);
 
         // Load avatars and inventory first
@@ -682,19 +783,28 @@ public class Player {
         this.getChallengeManager().loadFromDatabase();
         this.getRogueManager().loadFromDatabase();
         
-        // Update stamina
-        this.updateStamina();
+        // Load unlockables
+        this.loadUnlocksFromDatabase();
         
+        // Update stamina
+        this.updateStamina(System.currentTimeMillis());
+
         // Check instances
         if (this.getChallengeInstance() != null && !this.getChallengeInstance().validate(this)) {
             // Delete instance if it failed to validate (example: missing an excel)
             this.challengeInstance = null;
         }
-
+        
+        // Unstuck check, dont load player into raid scenes
+        MazePlaneExcel planeExcel = GameData.getMazePlaneExcelMap().get(planeId);
+        if (planeExcel == null || planeExcel.getPlaneType().getVal() >= PlaneType.Raid.getVal()) {
+            this.resetPosition();
+        }
+        
         // Load into saved scene (should happen after everything else loads)
         this.loadScene(planeId, floorId, entryId, this.getPos(), this.getRot(), false);
         
-        // Unstuck check in case we couldn't load the scene
+        // Reset position to starting scene in case we couldn't load the scene
         if (this.getScene() == null) {
             this.enterScene(GameConstants.START_ENTRY_ID, 0, false);
         }
@@ -707,16 +817,8 @@ public class Player {
         // Set logged in flag
         this.lastActiveTime = System.currentTimeMillis() / 1000;
         this.loggedIn = true;
-        
-        if (getSession() != null) {
-            try {
-                getSession().send((BasePacket) Class.forName(new String(Base64.getDecoder().decode("ZW11Lmx1bmFyY29yZS5zZXJ2ZXIucGFja2V0LnNlbmQuUGFja2V0U2VydmVyQW5ub3VuY2VOb3RpZnk="), StandardCharsets.UTF_8)).newInstance());
-            } catch (Exception e) {
-                getSession().close();
-            }
-        }
     }
-    
+
     public void onLogout() {
         this.loggedIn = false;
         this.lastActiveTime = System.currentTimeMillis() / 1000;
@@ -753,12 +855,23 @@ public class Player {
         datastore.getCollection(PlayerExtraLineup.class).deleteMany(filter);
         datastore.getCollection(Mail.class).deleteMany(filter);
         datastore.getCollection(RogueTalentData.class).deleteMany(filter);
+        datastore.getCollection(PlayerUnlockData.class).deleteOne(filter);
         
         // Delete friendships
         datastore.getCollection(Friendship.class).deleteMany(Filters.or(Filters.eq("ownerUid", uid), Filters.eq("friendUid", uid)));
         
         // Delete the player last
         LunarCore.getGameDatabase().delete(this);
+    }
+    
+    private void loadUnlocksFromDatabase() {
+        this.unlocks = LunarCore.getGameDatabase().getObjectByField(PlayerUnlockData.class, "ownerUid", this.getUid());
+        
+        if (this.unlocks == null) {
+            this.unlocks = new PlayerUnlockData(this);
+        } else {
+            this.unlocks.setOwner(this);
+        }
     }
     
     // Protobuf serialization
@@ -811,7 +924,7 @@ public class Player {
         var proto = BoardDataSync.newInstance()
                 .setSignature(this.getSignature());
         
-        for (int id : this.getUnlockedHeadIcons()) {
+        for (int id : this.getUnlocks().getHeadIcons()) {
             proto.addUnlockedHeadIconList(HeadIcon.newInstance().setId(id));
         }
         

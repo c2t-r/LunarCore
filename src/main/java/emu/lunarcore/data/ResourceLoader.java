@@ -21,6 +21,7 @@ import emu.lunarcore.data.config.FloorInfo;
 import emu.lunarcore.data.config.FloorInfo.FloorGroupSimpleInfo;
 import emu.lunarcore.data.config.GroupInfo;
 import emu.lunarcore.data.config.SkillAbilityInfo;
+import emu.lunarcore.data.config.SummonUnitInfo;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 
 public class ResourceLoader {
@@ -169,18 +170,17 @@ public class ResourceLoader {
 
     // Might be better to cache
     private static void loadFloorInfos() {
-        //
-        LunarCore.getLogger().info("Loading floor infos... this may take a while.");
-
         // Load floor infos
+        LunarCore.getLogger().info("Loading floor infos... this may take a while.");
         File floorDir = new File(LunarCore.getConfig().getResourceDir() + "/Config/LevelOutput/Floor/");
+        boolean missingGroupInfos = false;
 
         if (!floorDir.exists()) {
-            LunarCore.getLogger().warn("Floor infos are missing, please check your resources.");
+            LunarCore.getLogger().warn("Floor infos are missing, please check your resources folder: {resources}/Config/LevelOutput/Floor. Teleports and natural world spawns may not work!");
             return;
         }
 
-        // Dump
+        // Load floor infos
         for (File file : floorDir.listFiles()) {
             try (FileReader reader = new FileReader(file)) {
                 FloorInfo floor = gson.fromJson(reader, FloorInfo.class);
@@ -195,33 +195,73 @@ public class ResourceLoader {
         for (FloorInfo floor : GameData.getFloorInfos().values()) {
             for (FloorGroupSimpleInfo simpleGroup : floor.getSimpleGroupList()) {
                 File file = new File(LunarCore.getConfig().getResourceDir() + "/" + simpleGroup.getGroupPath());
-
-                if (!file.exists()) {
-                    continue;
-                }
+                if (!file.exists()) continue;
 
                 // TODO optimize
                 try (FileReader reader = new FileReader(file)) {
                     GroupInfo group = gson.fromJson(reader, GroupInfo.class);
                     group.setId(simpleGroup.getID());
+                    
                     floor.getGroups().put(simpleGroup.getID(), group);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
+            
+            // Check if we are missing group infos
+            if (floor.getGroups().size() == 0) {
+                missingGroupInfos = true;
+            }
 
             // Post load callback to cache floor info
             floor.onLoad();
         }
-
+        
+        // Notify the server owner if we are missing any files
+        if (missingGroupInfos) {
+            LunarCore.getLogger().warn("Group infos are missing, please check your resources folder: {resources}/Config/LevelOutput/Group. Teleports and natural world spawns may not work!");
+        }
+        
         // Done
         LunarCore.getLogger().info("Loaded " + GameData.getFloorInfos().size() + " floor infos.");
     }
 
     // Might be better to cache
     private static void loadMazeAbilities() {
+        // Loaded configs count
         int count = 0;
+        
+        // Load summon unit configs
+        for (var summonUnitExcel : GameData.getSummonUnitExcelMap().values()) {
+            if (summonUnitExcel.isIsClient()) {
+                count++;
+                continue;
+            }
+            
+            // Get file
+            File file = new File(LunarCore.getConfig().getResourceDir() + "/" + summonUnitExcel.getJsonPath());
+            if (!file.exists()) continue;
+            
+            try (FileReader reader = new FileReader(file)) {
+                SummonUnitInfo info = gson.fromJson(reader, SummonUnitInfo.class);
+                info.buildMazeSkillActions();
+                
+                summonUnitExcel.setInfo(info);
+                count++;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        // Notify the server owner if we are missing any files
+        if (count < GameData.getSummonUnitExcelMap().size()) {
+            LunarCore.getLogger().warn("Summon unit configs are missing, please check your resources folder: {resources}/Config/ConfigSummonUnit. Character summon techniques may not work!");
+        }
+        
+        // Reset loaded count
+        count = 0;
 
+        // Load maze abilities
         for (var avatarExcel : GameData.getAvatarExcelMap().values()) {
             // Get file
             File file = new File(LunarCore.getConfig().getResourceDir() + "/Config/ConfigAdventureAbility/LocalPlayer/LocalPlayer_" + avatarExcel.getNameKey() + "_Ability.json");
@@ -236,6 +276,11 @@ public class ResourceLoader {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+        
+        // Notify the server owner if we are missing any files
+        if (count < GameData.getAvatarExcelMap().size()) {
+            LunarCore.getLogger().warn("Maze abilities are missing, please check your resources folder: {resources}/Config/ConfigAdventureAbility/LocalPlayer. Character techniques may not work!");
         }
 
         // Done
