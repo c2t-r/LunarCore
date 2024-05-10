@@ -47,7 +47,6 @@ import emu.lunarcore.game.scene.Scene;
 import emu.lunarcore.game.scene.SceneBuff;
 import emu.lunarcore.game.scene.entity.EntityProp;
 import emu.lunarcore.game.scene.entity.GameEntity;
-import emu.lunarcore.proto.AssistSimpleInfoOuterClass.AssistSimpleInfo;
 import emu.lunarcore.proto.BoardDataSyncOuterClass.BoardDataSync;
 import emu.lunarcore.proto.FriendOnlineStatusOuterClass.FriendOnlineStatus;
 import emu.lunarcore.proto.HeadIconOuterClass.HeadIcon;
@@ -838,6 +837,13 @@ public class Player implements Tickable {
             this.enterScene(GameConstants.START_ENTRY_ID, 0, false);
         }
         
+        // Sanity check lineup to prevent the player from getting stuck in a loading screen if they loaded into the game with an avatar that had 0 hp
+        var leader = this.getCurrentLeaderAvatar();
+        if (leader != null && leader.getCurrentHp(this.getCurrentLineup()) <= 0) {
+            leader.setCurrentHp(this.getCurrentLineup(), 2000);
+            leader.save();
+        }
+        
         // Send welcome mail after we load managers from the database
         if (this.isNew) {
             this.getMailbox().sendWelcomeMail();
@@ -943,7 +949,6 @@ public class Player implements Tickable {
                 .setOnlineStatus(this.isOnline() ? FriendOnlineStatus.FRIEND_ONLINE_STATUS_ONLINE : FriendOnlineStatus.FRIEND_ONLINE_STATUS_OFFLINE)
                 .setPlatformType(PlatformType.PC)
                 .setLastActiveTime(this.getLastActiveTime())
-                .addAssistSimpleInfo(AssistSimpleInfo.newInstance().setAvatarId(GameConstants.TRAILBLAZER_AVATAR_ID).setLevel(1)) // TODO
                 .setHeadIcon(this.getHeadIcon());
         
         return proto;
